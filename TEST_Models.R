@@ -38,6 +38,9 @@ summary(mod2_b)
 compare_performance(mod1_a, mod1_b)
 compare_performance(mod2_a, mod2_b)
 
+plot(compare_performance(mod1_a, mod1_b))
+plot(compare_performance(mod2_a, mod2_b))
+
 mods <- bind_rows(
   as.data.frame(tidy(mod1_a, conf.int = T)),
   as.data.frame(tidy(mod1_b, conf.int = T)),
@@ -61,3 +64,21 @@ mods <-
   ) %>% 
   select(modelo, everything())
 
+# Óbito é melhor de usar, e o DIFF também. 
+
+# Vamos tentar rodar um hierárquico para ver o quanto o ESTADO auxilia nisso 
+# 
+# # TODO: Criar IDs melhores para os estados e rodar os modelos novamente. 
+mod3_a <- lmer(abst_diff ~ pct_obitos_acumulados + (1 | coduf), data = tse_2020, na.action = "na.omit")
+summary(mod3_a)
+icc(mod3_a)
+
+mod4_a <- lmer(abst_diff ~ pct_obitos_acumulados + scale(aptos_tot) + (scale(aptos_tot) | coduf), data = tse_2020, na.action = "na.omit")
+summary(mod4_a)
+icc(mod4_a)
+
+mod4_b <- lmer(abst_diff ~ pct_obitos_acumulados * scale(aptos_tot) + (scale(aptos_tot) | coduf), data = tse_2020, na.action = "na.omit")
+summary(mod4_b)
+icc(mod4_b)
+
+compare_performance(mod3_a, mod4_a, mod4_b)

@@ -3,13 +3,13 @@
 .Rapp.history
 
 # Session Data files
-.RData
+#.RData
 
 # User-specific files
 .Ruserdata
 
 # Example code in package build process
-*-Ex.R
+#*-Ex.R
 
 # Output files from R CMD build
 /*.tar.gz

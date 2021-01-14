@@ -18,6 +18,8 @@ covid_mun <- covid %>%
 covid_sabado <- covid_mun %>% 
   filter(data == as.Date("2020-11-14")) %>% 
   rename("codigo_ibge" = codmun) %>% 
+  mutate(pct_casos_acumulados = casos_acumulado/populacao_tcu2019,
+         pct_obitos_acumulados = obitos_acumulado/populacao_tcu2019) %>% 
   select(codigo_ibge, coduf, estado, starts_with("pct"), municipio)
 
 ## TSE 

@@ -66,6 +66,33 @@ tse %>%
 # Minha sugestão: considerar o comparecimento/abstenção no cargo mais alto 
 # daquele pleito (Presidente e Prefeito)
 
+# Fazendo o DIFF de 2016 pra 2020 
+tse %>% 
+  filter(ano %in% c(2016, 2020) & turno == 1) %>% 
+  select(1:cargo, prop_comparecimento, municipio, capital) %>% 
+  mutate(prop_abstencao = 1 - prop_comparecimento) %>% 
+  select(-prop_comparecimento) %>% 
+  pivot_wider(names_from = ano, values_from = prop_abstencao, names_prefix = "abst_") %>% 
+  mutate(abst_diff = abst_2020 - abst_2016) %>% 
+  pivot_longer(names_to = "ano", 
+               names_prefix = "abst_", 
+               cols = c("abst_2016", "abst_2020"),
+               values_to = "prop_abstencao") %>% 
+  filter(ano == 2020 & cargo == "prefeito") -> tse_diff
+
+  tse_diff %>% 
+  count(sign(abst_diff)) %>% 
+  clean_names() %>% 
+  mutate(sinal = ifelse(sign_abst_diff == 1, "Aumento", "Diminuição")) %>% 
+  select(-1) %>% 
+  select(sinal, "qtde" = n)
+
+# Média de eleitores aptos 
+tse_2020 %>% 
+  left_join(tse_diff %>% select(codigo_ibge, abst_diff), by = c("codigo_ibge.x" = "codigo_ibge")) %>% 
+  pull(aptos_tot) %>% 
+  summary()
+
 # Salvei a imagem em um RData, logo...
 #save.image("bancos.RData")
 #load("bancos.RData")

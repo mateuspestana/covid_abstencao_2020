@@ -11,6 +11,15 @@ pacman::p_load(tidyverse,
 covid <- vroom("~/Downloads/HIST_PAINEL_COVIDBR.csv") %>%
   clean_names() 
 
+covid_mun <- covid %>% 
+  filter(!is.na(municipio)) %>% # Filtra pra sábado
+  mutate(municipio = str_to_upper(municipio))
+
+covid_sabado <- covid_mun %>% 
+  filter(data == as.Date("2020-11-14")) %>% 
+  rename("codigo_ibge" = codmun) %>% 
+  select(codigo_ibge, coduf, estado, starts_with("pct"), municipio)
+
 ## TSE 
 ### isso eu baixei do BigQuery, que é uma plataforma do google onde
 ### pessoal guarda bancos. Tem um projeto chamado BaseDosDados que 
@@ -32,7 +41,7 @@ tse <- dbGetQuery(con, tse, page_size = 20000)
 # somar o ID do IBGE, para podermos georreferenciar posteriormente
 
 ibge_id <- vroom("municipios_brasileiros_tse.csv") %>% 
-  select(codigo_tse, capital, codigo_ibge) %>% 
+  select(codigo_tse, capital, codigo_ibge, municipio) %>% 
   rename("id_municipio_tse" = "codigo_tse")
 
 # Juntando e corrigindo algumas imperfeições 

@@ -1,7 +1,9 @@
 pacman::p_load(tidyverse,
                DataExplorer,
                hrbrthemes, 
-               ggrepel)
+               ggrepel,
+               ggthemes)
+
 # Carregando os bancos
 load("bancos.RData")
 

@@ -93,6 +93,10 @@ tse_2020 %>%
   pull(aptos_tot) %>% 
   summary()
 
+# Resolvendo os NAs:
+tse <- tse %>% 
+  mutate(codigo_sus = as.double(str_sub(codigo_ibge, end = -2)))
+
 # Salvei a imagem em um RData, logo...
 #save.image("bancos.RData")
 #load("bancos.RData")

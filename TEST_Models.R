@@ -13,15 +13,10 @@ pacman::p_load(lme4,
 tse_2020 <- tse %>%
   filter(ano == 2020, cargo == "prefeito", turno == 1) %>%
   left_join(covid_sabado,
-            by = c("municipio", "sigla_uf" = "estado")) %>%
+            by = c("sigla_uf" = "estado", "codigo_sus" = "codigo_ibge")) %>%
   mutate(prop_abstencoes = 1 - prop_comparecimento) %>%
-  left_join(tse_diff %>% select(codigo_ibge, abst_diff),
-            by = c("codigo_ibge.x" = "codigo_ibge"))
-
-nas <- tse_2020 %>%
-  filter(is.na(coduf))
-
-# 42 NAs! Depois a gente vasculha eles...
+  left_join(tse_diff %>% select(codigo_ibge, abst_diff)) %>% 
+  select(-municipio.y)
 
 mod1_a <-
   lm(prop_abstencoes ~ pct_casos_acumulados, data = tse_2020)

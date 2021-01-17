@@ -2,7 +2,8 @@ pacman::p_load(lme4,
                performance,
                see,
                broom,
-               broom.mixed)
+               broom.mixed,
+               stargazer)
 
 # Testando alguns modelos
 
@@ -16,18 +17,23 @@ tse_2020 <- tse %>%
             by = c("sigla_uf" = "estado", "codigo_sus" = "codigo_ibge")) %>%
   mutate(prop_abstencoes = 1 - prop_comparecimento) %>%
   left_join(tse_diff %>% select(codigo_ibge, abst_diff)) %>% 
-  select(-municipio.y)
+  select(-municipio.y) 
 
 mod1_a <-
-  lm(prop_abstencoes ~ pct_casos_acumulados, data = tse_2020)
+  lm(prop_abstencoes ~ pct_casos_acumulados, data = tse_2020 %>% 
+       mutate(prop_abstencoes = 100*prop_abstencoes,
+              pct_casos_acumulados = 100*pct_casos_acumulados))
 summary(mod1_a)
 mod1_b <-
   lm(prop_abstencoes ~ pct_obitos_acumulados, data = tse_2020)
 summary(mod1_b)
 
-mod2_a <- lm(abst_diff ~ pct_casos_acumulados, data = tse_2020)
+mod2_a <- lm(abst_diff ~ pct_casos_acumulados, data = tse_2020 %>% mutate(prop_abstencoes = 100*prop_abstencoes,
+                                                                     pct_casos_acumulados = 100*pct_casos_acumulados))
 summary(mod2_a)
-mod2_b <- lm(abst_diff ~ pct_obitos_acumulados, data = tse_2020)
+mod2_b <- lm(abst_diff ~ pct_obitos_acumulados, data = tse_2020 %>% 
+               mutate(abst_diff = 100*abst_diff,
+                      pct_obitos_acumulados = 100*pct_obitos_acumulados))
 summary(mod2_b)
 
 compare_performance(mod1_a, mod1_b)
@@ -64,16 +70,38 @@ mods <-
 # Vamos tentar rodar um hierárquico para ver o quanto o ESTADO auxilia nisso 
 # 
 # # TODO: Criar IDs melhores para os estados e rodar os modelos novamente. 
-mod3_a <- lmer(abst_diff ~ pct_obitos_acumulados + (1 | coduf), data = tse_2020, na.action = "na.omit")
-summary(mod3_a)
-icc(mod3_a)
+mod3_reg <- lmer(abst_diff ~ pct_obitos_acumulados + (1 | id_regiao), data = tse_2020, na.action = "na.omit")
+summary(mod3_reg)
+icc(mod3_reg)
+mod3_estado <- lmer(abst_diff ~ pct_obitos_acumulados + (1 | id_estado), data = tse_2020, na.action = "na.omit")
+summary(mod3_estado)
+icc(mod3_estado)
+mod3_regestado <- lmer(abst_diff ~ pct_obitos_acumulados + (1| id_regiao) + (1 | id_estado), data = tse_2020, na.action = "na.omit")
+summary(mod3_estado)
+icc(mod3_estado)
+compare_performance(mod3_reg, mod3_estado, mod3_regestado)
 
-mod4_a <- lmer(abst_diff ~ pct_obitos_acumulados + scale(aptos_tot) + (scale(aptos_tot) | coduf), data = tse_2020, na.action = "na.omit")
+
+stargazer(mod3_reg, type = "text")
+
+mod4_a <- lmer(abst_diff ~ pct_obitos_acumulados + scale(aptos_tot) + (scale(aptos_tot) | id_estado), data = tse_2020, na.action = "na.omit")
 summary(mod4_a)
 icc(mod4_a)
 
-mod4_b <- lmer(abst_diff ~ pct_obitos_acumulados * scale(aptos_tot) + (scale(aptos_tot) | coduf), data = tse_2020, na.action = "na.omit")
+mod4_b <- lmer(abst_diff ~ pct_obitos_acumulados * scale(aptos_tot) + (scale(aptos_tot) | id_estado), data = tse_2020, na.action = "na.omit")
 summary(mod4_b)
 icc(mod4_b)
 
-compare_performance(mod3_a, mod4_a, mod4_b)
+mod4_c <- lmer(abst_diff ~ pct_obitos_acumulados + scale(aptos_tot) + (scale(aptos_tot) | id_estado), data = tse_2020, na.action = "na.omit")
+summary(mod4_a)
+summary(mod4_c)
+compare_performance(mod3_a, mod4_a, mod4_c)
+
+stargazer(mod3_estado, mod4_a, type = "text")
+
+# Tentando prever
+tse_diff %>% 
+  mutate(abst_diff_pred = predict(mod4_a, )) %>% 
+  select(sigla_uf, municipio, abst_diff, abst_diff_pred, prop_abstencao)
+
+extract_eq(mod4_a)

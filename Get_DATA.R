@@ -11,8 +11,33 @@ pacman::p_load(tidyverse,
 covid <- vroom("~/Downloads/HIST_PAINEL_COVIDBR.csv") %>%
   clean_names() 
 
+# Criando IDs únicos para cada estado, municipio e região
+covid %>% filter(regiao != "Brasil") %>% 
+  select(regiao) %>% 
+  distinct() %>% 
+  mutate(id_regiao = as.double(rownames(.)) - 1) -> ids_regiao
+
+covid %>% filter(regiao != "Brasil") %>% 
+  select(estado) %>% 
+  distinct() %>% 
+  arrange(estado) %>% 
+  mutate(id_estado = as.double(rownames(.)) - 1) -> ids_estados
+
+
+covid %>% filter(regiao != "Brasil") %>% 
+  select(codmun) %>% 
+  distinct() %>% 
+  arrange(codmun) %>% 
+  mutate(id_municipio = as.double(rownames(.)) - 1) -> ids_municipios
+
+# joining dos ids
+covid %>% 
+  left_join(ids_regiao) %>% 
+  left_join(ids_estados) %>% 
+  left_join(ids_municipios) -> covid
+
 covid_mun <- covid %>% 
-  filter(!is.na(municipio)) %>% # Filtra pra sábado
+  filter(!is.na(municipio)) %>% 
   mutate(municipio = str_to_upper(municipio))
 
 covid_sabado <- covid_mun %>% 
@@ -20,7 +45,7 @@ covid_sabado <- covid_mun %>%
   rename("codigo_ibge" = codmun) %>% 
   mutate(pct_casos_acumulados = casos_acumulado/populacao_tcu2019,
          pct_obitos_acumulados = obitos_acumulado/populacao_tcu2019) %>% 
-  select(codigo_ibge, coduf, estado, starts_with("pct"), municipio)
+  select(codigo_ibge, coduf, estado, starts_with("pct"), municipio, starts_with("id_")) 
 
 ## TSE 
 ### isso eu baixei do BigQuery, que é uma plataforma do google onde
@@ -86,6 +111,11 @@ tse %>%
   mutate(sinal = ifelse(sign_abst_diff == 1, "Aumento", "Diminuição")) %>% 
   select(-1) %>% 
   select(sinal, "qtde" = n)
+  
+# TSE DIFF> análise
+tse_2020 %>% 
+  select(sigla_uf, abst_diff, aptos_tot) %>% 
+  
 
 # Média de eleitores aptos 
 tse_2020 %>% 
@@ -96,6 +126,7 @@ tse_2020 %>%
 # Resolvendo os NAs:
 tse <- tse %>% 
   mutate(codigo_sus = as.double(str_sub(codigo_ibge, end = -2)))
+
 
 # Salvei a imagem em um RData, logo...
 #save.image("bancos.RData")

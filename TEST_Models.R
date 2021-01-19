@@ -3,7 +3,7 @@ pacman::p_load(lme4,
                see,
                broom,
                broom.mixed,
-               stargazer)
+               stargazer, tidyverse)
 
 # Testando alguns modelos
 
@@ -12,19 +12,20 @@ pacman::p_load(lme4,
 # em tese decidiriam)
 
 tse_2020 <- tse %>%
-  filter(ano == 2020, cargo == "prefeito", turno == 1) %>%
+  filter(ano == 2020, cargo == "prefeito", turno == 1, sigla_uf != "AP") %>%
   left_join(covid_sabado,
             by = c("sigla_uf" = "estado", "codigo_sus" = "codigo_ibge")) %>%
   mutate(prop_abstencoes = 1 - prop_comparecimento) %>%
   left_join(tse_diff %>% select(codigo_ibge, abst_diff)) %>% 
-  select(-municipio.y) 
+  select(-municipio.y) %>% 
+  mutate(prop_abst = 1-(prop_abstencoes/(prop_abstencoes-abst_diff)))
 
 mod1_a <-
   lm(prop_abstencoes ~ pct_casos_acumulados, data = tse_2020 %>% 
        mutate(prop_abstencoes = 100*prop_abstencoes,
               pct_casos_acumulados = 100*pct_casos_acumulados))
 summary(mod1_a)
-mod1_b <-
+ mod1_b <-
   lm(prop_abstencoes ~ pct_obitos_acumulados, data = tse_2020)
 summary(mod1_b)
 
@@ -35,6 +36,15 @@ mod2_b <- lm(abst_diff ~ pct_obitos_acumulados, data = tse_2020 %>%
                mutate(abst_diff = 100*abst_diff,
                       pct_obitos_acumulados = 100*pct_obitos_acumulados))
 summary(mod2_b)
+
+mod_prop1 <- lm(prop_abst ~ pct_casos_acumulados, data = tse_2020 %>% 
+                 mutate(prop_abstencoes = 100*prop_abstencoes,
+                        pct_casos_acumulados = 100*pct_casos_acumulados))
+mod_prop2 <- lm(prop_abst ~ pct_obitos_acumulados, data = tse_2020 %>% 
+                  mutate(prop_abstencoes = 100*prop_abstencoes,
+                         pct_obitos_acumulados = 100*pct_obitos_acumulados))
+
+stargazer(mod2_a, mod2_b,mod_prop1, mod_prop2, type = "text")
 
 compare_performance(mod1_a, mod1_b)
 compare_performance(mod2_a, mod2_b)
@@ -98,6 +108,13 @@ summary(mod4_c)
 compare_performance(mod3_a, mod4_a, mod4_c)
 
 stargazer(mod3_estado, mod4_a, type = "text")
+
+
+mod5_estado <- lmer(prop_abst ~ pct_obitos_acumulados + (1 | id_estado), data = tse_2020, na.action = "na.omit")
+mod5_a <- lmer(prop_abst ~ pct_obitos_acumulados + scale(aptos_tot) + (scale(aptos_tot) | id_estado), data = tse_2020, na.action = "na.omit")
+
+summary(mod5_a)
+
 
 # Tentando prever
 tse_diff %>% 

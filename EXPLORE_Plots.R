@@ -129,4 +129,4 @@ mapa_mun %>%
   labs(title = "Abstenção no Brasil em 2020", 
        subtitle = "Por município",
        fill = "Abstenção (%)")+
-  scale_fill_gradientn(colors = inferno(100, direction = -1))
+  scale_fill_gradientn(colors = inferno(100, direction = 1))
